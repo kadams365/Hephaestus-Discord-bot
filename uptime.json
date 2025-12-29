@@ -1,0 +1,14 @@
+{
+  "jellyfin": {
+    "online": true,
+    "since": 1767046700381
+  },
+  "minecraft": {
+    "online": true,
+    "since": 1767046700385
+  },
+  "truenas": {
+    "online": true,
+    "since": 1767047475953
+  }
+}

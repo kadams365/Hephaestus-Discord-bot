@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "mcstatus": "^1.0.1",
+    "minecraft-server-util": "^5.4.4",
+    "node-fetch": "^3.3.2",
+    "node-mcstatus": "^1.2.1"
+  }
+}
