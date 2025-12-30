@@ -1,24 +1,24 @@
-# Use official Node.js 20 LTS image
+# Use Node 20 slim
 FROM node:20-slim
 
 # Set working directory
 WORKDIR /usr/src/app
 
-# Copy package files and install dependencies first (for caching)
+# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm install --production
 
-# Copy the rest of the bot code
+# Copy bot source code
 COPY . .
 
-# Set environment variable for data folder inside container
+# Set environment variable for data folder
 ENV DATA_DIR=/usr/src/app/data
 
 # Create data directory
 RUN mkdir -p $DATA_DIR
 
-# Expose port (not strictly necessary unless you add HTTP server)
-#EXPOSE 3000
+# Create empty JSON files if missing
+RUN touch ./services.json ./uptime.json ./downtime.json
 
 # Run the bot
 CMD ["node", "index.js"]

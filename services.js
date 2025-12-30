@@ -7,31 +7,31 @@ import { serviceState, downtimeLog, saveStateDebounced } from "./state.js";
 
 export const SERVICES_FILE = "./services.json";
 
-// Load services from JSON file
-export let SERVICES = fs.existsSync(SERVICES_FILE)
-  ? JSON.parse(fs.readFileSync(SERVICES_FILE, "utf8"))
-  : {
-      jellyfin: {
-        name: "Jellyfin",
-        type: "http",
-        url: "https://jellyfin.routernet.org",
-      },
-      minecraft: {
-        name: "Minecraft (Foreverworld)",
-        type: "minecraft",
-        host: "forever.routernet.org",
-        port: 25566,
-      },
-      truenas: {
-        name: "TrueNAS",
-        type: "http",
-        url: "https://truenas.routernet.lan",
-      },
-    };
+// ================= SAFE LOAD SERVICES =================
+function ensureFile(path) {
+  try {
+    if (!fs.existsSync(path)) {
+      fs.writeFileSync(path, JSON.stringify({}, null, 2));
+      return {};
+    }
+    const raw = fs.readFileSync(path, "utf8");
+    return raw.trim() ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error(`Error reading ${path}:`, err);
+    return {};
+  }
+}
 
-// Save services JSON
+// Load services safely (empty if file missing/empty)
+export let SERVICES = ensureFile(SERVICES_FILE);
+
+// ================= SAVE SERVICES =================
 export function saveServices() {
-  fs.writeFileSync(SERVICES_FILE, JSON.stringify(SERVICES, null, 2));
+  try {
+    fs.writeFileSync(SERVICES_FILE, JSON.stringify(SERVICES, null, 2));
+  } catch (err) {
+    console.error(`Error saving ${SERVICES_FILE}:`, err);
+  }
 }
 
 // ================= SERVICE CHECKS =================
@@ -62,12 +62,11 @@ export function checkTCP(host, port) {
       resolve(true);
     });
     socket.on("error", () => {
-      console.log(`[CHECK] TCP ${host}:${port} → OFFLINE`);
+      socket.destroy();
       resolve(false);
     });
     socket.on("timeout", () => {
       socket.destroy();
-      console.log(`[CHECK] TCP ${host}:${port} → TIMEOUT`);
       resolve(false);
     });
   });
@@ -75,13 +74,9 @@ export function checkTCP(host, port) {
 
 export async function checkMinecraft(host, port) {
   try {
-    // Ensure host is a string and port is a number
     host = String(host);
     port = Number(port);
-
-    // Correct call: pass host and port separately, not as an object
-    const result = await status(host, port, { timeout: 5000 });
-
+    await status(host, port, { timeout: 5000 });
     console.log(`[CHECK] Minecraft ${host}:${port} → ONLINE`);
     return true;
   } catch (err) {
@@ -97,6 +92,8 @@ export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
   const svc = SERVICES[key];
   const now = Date.now();
   let online = false;
+
+  if (!svc) return;
 
   if (svc.type === "http") online = await checkHTTP(svc.url);
   else if (svc.type === "tcp") online = await checkTCP(svc.host, svc.port);
@@ -132,7 +129,9 @@ export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
       MAX_BACKOFF
     );
     setTimeout(() => checkService(key, POLL_INTERVAL, MAX_BACKOFF), nextPoll);
-  } else failureCounts[key] = 0;
+  } else {
+    failureCounts[key] = 0;
+  }
 
   return { ...state, changed };
 }
