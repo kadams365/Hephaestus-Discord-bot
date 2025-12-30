@@ -2,5 +2,5 @@ node_modules
 .env
 uptime.json
 downtime.json
-services.json    # optional if you don’t want to track dynamic services changes
+services.json
 .DS_Store       # macOS artifacts, if relevant

@@ -38,26 +38,26 @@ Default services are in `services.json`. Example:
   "minecraft": {
     "name": "Minecraft (Foreverworld)",
     "type": "minecraft",
-    "host": "forever.example.com",
+    "host": "minecraft.example.com",
     "port": 25565
   }
 }
 ```
 
-* Use `/addservice` or `/removeservice` in Discord to manage services dynamically.
+- Use `/addservice` or `/removeservice` in Discord to manage services dynamically.
 
 ---
 
 ## Commands
 
-* `/status` → Show status of all services
-* `/uptime` → Show uptime percentage for a service
-* `/maintenance` → Toggle maintenance mode
-* `/ping` → Check bot latency
-* `/help` → Show all bot commands
-* `/info` → Bot info (version, uptime, total services)
-* `/addservice` → Add a new service
-* `/removeservice` → Remove a service
+- `/status` → Show status of all services
+- `/uptime` → Show uptime percentage for a service
+- `/maintenance` → Toggle maintenance mode
+- `/ping` → Check bot latency
+- `/help` → Show all bot commands
+- `/info` → Bot info (version, uptime, total services)
+- `/addservice` → Add a new service
+- `/removeservice` → Remove a service
 
 ---
 
@@ -96,9 +96,11 @@ services:
     build: .
     container_name: hephaestus-bot
     environment:
-      DISCORD_TOKEN: your_bot_token
-      CLIENT_ID: your_client_id
-      GUILD_ID: your_guild_id
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      CLIENT_ID: ${CLIENT_ID}
+      GUILD_ID: ${GUILD_ID}
+      ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
+      DATA_DIR: ${DATA_DIR}
     volumes:
       - ./services.json:/app/services.json
       - ./uptime.json:/app/uptime.json
@@ -106,7 +108,7 @@ services:
 ```
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ---
@@ -116,8 +118,8 @@ docker-compose up -d
 The bot logs all service checks to the console:
 
 ```
-[CHECK] HTTP https://jellyfin.example.com → ONLINE
-[CHECK] Minecraft forever.example.com:25566 → ONLINE
+[CHECK] HTTP https://example.com → ONLINE
+[CHECK] Minecraft minecraft.example.com:25565 → ONLINE
 [CHECK] TCP 192.168.1.10:22 → OFFLINE
 ```
 
@@ -125,10 +127,11 @@ The bot logs all service checks to the console:
 
 ## Tips
 
-* Clear old slash commands if you see duplicates:
+- Clear old slash commands if you see duplicates:
 
   ```js
-  rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] })
+  rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] });
   ```
-* Ensure `services.json` is writable for dynamic `/addservice` commands.
-* Self-signed HTTPS servers are accepted in LAN.
+
+- Ensure `services.json` is writable for dynamic `/addservice` commands.
+- Self-signed HTTPS servers are accepted in LAN.

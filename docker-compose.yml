@@ -1,8 +1,14 @@
 services:
-  bot:
+  hephaestus-bot:
     build: .
     container_name: hephaestus-bot
-    env_file: .env
-    restart: unless-stopped
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      CLIENT_ID: ${CLIENT_ID}
+      GUILD_ID: ${GUILD_ID}
+      ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
+      DATA_DIR: ${DATA_DIR}
     volumes:
-      - ./data:/usr/src/app/data
+      - ./services.json:/app/services.json
+      - ./uptime.json:/app/uptime.json
+    restart: unless-stopped

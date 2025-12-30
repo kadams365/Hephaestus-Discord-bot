@@ -36,7 +36,7 @@ cd Hephaestus-Discord-bot
 ```
 
 2. Install dependencies:
-   
+
 ```bash
 npm install
 ```
@@ -47,6 +47,8 @@ npm install
 DISCORD_TOKEN=your_bot_token
 CLIENT_ID=your_application_client_id
 GUILD_ID=your_guild_id
+ALERT_CHANNEL_ID=alert_channel_id
+DATA_DIR=/usr/src/app/data
 ```
 
 4. Build & Run
@@ -71,9 +73,11 @@ services:
     build: .
     container_name: hephaestus-bot
     environment:
-      DISCORD_TOKEN: your_bot_token
-      CLIENT_ID: your_client_id
-      GUILD_ID: your_guild_id
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      CLIENT_ID: ${CLIENT_ID}
+      GUILD_ID: ${GUILD_ID}
+      ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
+      DATA_DIR: ${DATA_DIR}
     volumes:
       - ./services.json:/app/services.json
       - ./uptime.json:/app/uptime.json
@@ -82,25 +86,24 @@ services:
 
 Run with:
 
-
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ---
 
 ## Commands
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `/status` | Show status of all services | - |
-| `/uptime` | Show uptime percentage | `service`: name of service |
-| `/maintenance` | Enable or disable maintenance mode | `service`: name, `enabled`: true/false |
-| `/ping` | Check bot latency | - |
-| `/help` | Show all bot commands | - |
-| `/info` | Show bot info (version, uptime, total services) | - |
-| `/addservice` | Add a new service to monitoring | `name`: service name, `type`: http/minecraft/tcp, `url_or_host`: URL or host, optional `port` |
-| `/removeservice` | Remove a service from monitoring | `name`: service name |
+| Command          | Description                                     | Options                                                                                       |
+| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `/status`        | Show status of all services                     | -                                                                                             |
+| `/uptime`        | Show uptime percentage                          | `service`: name of service                                                                    |
+| `/maintenance`   | Enable or disable maintenance mode              | `service`: name, `enabled`: true/false                                                        |
+| `/ping`          | Check bot latency                               | -                                                                                             |
+| `/help`          | Show all bot commands                           | -                                                                                             |
+| `/info`          | Show bot info (version, uptime, total services) | -                                                                                             |
+| `/addservice`    | Add a new service to monitoring                 | `name`: service name, `type`: http/minecraft/tcp, `url_or_host`: URL or host, optional `port` |
+| `/removeservice` | Remove a service from monitoring                | `name`: service name                                                                          |
 
 ---
 
@@ -113,22 +116,32 @@ All monitored services are stored in `services.json`:
   "jellyfin": {
     "name": "Jellyfin",
     "type": "http",
-    "url": "https://jellyfin.example.com"
+    "url": "https://jellyfin.com"
   },
   "minecraft": {
-    "name": "Minecraft (Foreverworld)",
+    "name": "Minecraft",
     "type": "minecraft",
-    "host": "forever.example.com",
+    "host": "minecraft.example.com",
     "port": 25565
   }
 }
+```
 
+---
+
+## Logging
+
+The bot logs all service checks to the console:
+
+```
+[CHECK] HTTP https://example.com → ONLINE
+[CHECK] Minecraft minecraft.example.com:25565 → ONLINE
+[CHECK] TCP 192.168.1.10:22 → OFFLINE
 ```
 
 ---
 
 ## Troubleshooting & Tips
-
 
 Duplicate slash commands: Clear old commands using rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] }) before registering new ones.
 
