@@ -2,6 +2,8 @@
 
 A Discord bot for monitoring services such as HTTP servers, Minecraft servers, and TCP services. Supports uptime tracking, maintenance mode, and dynamic service management.
 
+**Quick Start Guide:** [Quick Start](./QUICK_START.md)
+
 ---
 
 ## Features
