@@ -1,8 +1,9 @@
+// interactions.js
 import { EmbedBuilder } from "discord.js";
 import {
   serviceState,
-  calculateRollingUptime,
   saveStateDebounced,
+  calculateRollingUptime,
 } from "./state.js";
 import { SERVICES } from "./services.js";
 
@@ -34,11 +35,14 @@ export async function handleInteraction(interaction, client) {
 
       case "uptime": {
         const key = interaction.options.getString("service", true);
-        const uptime24h = calculateRollingUptime(key, 24 * 60 * 60 * 1000);
-        const uptime7d = calculateRollingUptime(key, 7 * 24 * 60 * 60 * 1000);
-        const uptime30d = calculateRollingUptime(key, 30 * 24 * 60 * 60 * 1000);
         return interaction.editReply(
-          `${SERVICES[key].name} uptime:\n24h: ${uptime24h}%\n7d: ${uptime7d}%\n30d: ${uptime30d}%`
+          `${SERVICES[key].name} uptime:\n24h: ${calculateRollingUptime(
+            key,
+            24 * 60 * 60 * 1000
+          )}%\n7d: ${calculateRollingUptime(
+            key,
+            7 * 24 * 60 * 60 * 1000
+          )}%\n30d: ${calculateRollingUptime(key, 30 * 24 * 60 * 60 * 1000)}%`
         );
       }
 

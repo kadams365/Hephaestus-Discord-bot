@@ -1,0 +1,18 @@
+{
+  "__monitorStartTime": 1767097295058,
+  "jellyfin": {
+    "online": true,
+    "since": 1767097295916,
+    "maintenance": false
+  },
+  "minecraft": {
+    "online": true,
+    "since": 1767097342099,
+    "maintenance": false
+  },
+  "truenas": {
+    "online": true,
+    "since": 1767097296098,
+    "maintenance": false
+  }
+}

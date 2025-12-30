@@ -5,7 +5,6 @@ import https from "https";
 import { status } from "minecraft-server-util";
 import { serviceState, downtimeLog, saveStateDebounced } from "./state.js";
 
-/* ================= SERVICES ================= */
 export const SERVICES = {
   jellyfin: {
     name: "Jellyfin",
@@ -25,36 +24,41 @@ export const SERVICES = {
   },
 };
 
-/* ================= SERVICE CHECKS ================= */
+// HTTP check (handles LAN self-signed certs)
 export async function checkHTTP(url) {
   try {
-    // Accept self-signed certificates for LAN servers
     const agent = new https.Agent({ rejectUnauthorized: false });
     const res = await fetch(url, { timeout: 5000, redirect: "manual", agent });
     const online = res.status >= 200 && res.status < 400;
-
+    console.log(
+      `[CHECK] HTTP ${url} → ${online ? "ONLINE" : "OFFLINE"} (status ${
+        res.status
+      })`
+    );
     return online;
   } catch (err) {
+    console.warn(`[CHECK] HTTP ${url} failed: ${err.message}`);
     return false;
   }
 }
 
+// TCP check
 export function checkTCP(host, port) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     socket.setTimeout(5000);
-
     socket.connect(port, host, () => {
       socket.destroy();
+      console.log(`[CHECK] TCP ${host}:${port} → ONLINE`);
       resolve(true);
     });
-
     socket.on("error", () => {
+      console.log(`[CHECK] TCP ${host}:${port} → OFFLINE`);
       resolve(false);
     });
-
     socket.on("timeout", () => {
       socket.destroy();
+      console.log(`[CHECK] TCP ${host}:${port} → TIMEOUT`);
       resolve(false);
     });
   });
@@ -62,21 +66,23 @@ export function checkTCP(host, port) {
 
 export async function checkMinecraft(host, port) {
   try {
-    // Ensure host is string and port is number
+    // Ensure proper types
     host = String(host);
     port = Number(port);
 
-    // Only check if server responds
+    // Check server online, ignore result
     await status(host, port, { timeout: 5000 });
+
+    console.log(`[CHECK] Minecraft ${host}:${port} → ONLINE`);
     return true;
   } catch (err) {
+    console.warn(`[CHECK] Minecraft ${host}:${port} failed: ${err.message}`);
     return false;
   }
 }
 
-/* ================= FAILURE BACKOFF ================= */
+// Service polling with backoff
 const failureCounts = {};
-
 export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
   const svc = SERVICES[key];
   const now = Date.now();
@@ -109,11 +115,10 @@ export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
   state.online = online;
   serviceState[key] = state;
 
-  // Exponential backoff for offline services
   if (!online) {
     failureCounts[key] = (failureCounts[key] ?? 0) + 1;
     const nextPoll = Math.min(
-      POLL_INTERVAL * Math.pow(2, failureCounts[key] - 1),
+      POLL_INTERVAL * 2 ** (failureCounts[key] - 1),
       MAX_BACKOFF
     );
     setTimeout(() => checkService(key, POLL_INTERVAL, MAX_BACKOFF), nextPoll);

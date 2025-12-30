@@ -1,21 +1,69 @@
-import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
+// index.js
+import "dotenv/config";
 import {
-  DISCORD_TOKEN,
-  CLIENT_ID,
-  GUILD_ID,
-  POLL_INTERVAL,
-  MAX_BACKOFF,
-} from "./config.js";
-import { commands } from "./commands.js";
-import { handleInteraction } from "./interactions.js";
-import { pollServices } from "./poller.js";
-import { serviceState, monitorStartTime } from "./state.js";
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+} from "discord.js";
 import { SERVICES, checkService } from "./services.js";
+import { handleInteraction } from "./interactions.js";
+import { serviceState, monitorStartTime } from "./state.js";
+
+const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
+const POLL_INTERVAL = 60_000;
+const MAX_BACKOFF = 10 * 60_000;
+
+if (!DISCORD_TOKEN || !CLIENT_ID || !GUILD_ID) {
+  console.error("Missing required environment variables");
+  process.exit(1);
+}
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
+// Slash commands
+const commands = [
+  new SlashCommandBuilder()
+    .setName("status")
+    .setDescription("Show status of all services"),
+  new SlashCommandBuilder()
+    .setName("uptime")
+    .setDescription("Show uptime percentage")
+    .addStringOption((o) =>
+      o
+        .setName("service")
+        .setDescription("Service name")
+        .setRequired(true)
+        .addChoices(
+          ...Object.entries(SERVICES).map(([k, v]) => ({
+            name: v.name,
+            value: k,
+          }))
+        )
+    ),
+  new SlashCommandBuilder()
+    .setName("maintenance")
+    .setDescription("Toggle maintenance mode")
+    .addStringOption((o) =>
+      o
+        .setName("service")
+        .setDescription("Service name")
+        .setRequired(true)
+        .addChoices(
+          ...Object.entries(SERVICES).map(([k, v]) => ({
+            name: v.name,
+            value: k,
+          }))
+        )
+    )
+    .addBooleanOption((o) =>
+      o.setName("enabled").setDescription("Enable/disable").setRequired(true)
+    ),
+  new SlashCommandBuilder().setName("ping").setDescription("Check bot latency"),
+].map((c) => c.toJSON());
 
+const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
 (async () => {
   console.log("Registering slash commands...");
   await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
@@ -24,9 +72,16 @@ const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
   console.log("Slash commands registered");
 })();
 
+// Interaction handling
 client.on("interactionCreate", (interaction) =>
   handleInteraction(interaction, client)
 );
+
+// Polling services
+async function pollServices() {
+  for (const key of Object.keys(SERVICES))
+    await checkService(key, POLL_INTERVAL, MAX_BACKOFF);
+}
 
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -39,7 +94,7 @@ client.once("clientReady", async () => {
       };
     await checkService(key, POLL_INTERVAL, MAX_BACKOFF);
   }
-  setInterval(() => pollServices(POLL_INTERVAL, MAX_BACKOFF), POLL_INTERVAL);
+  setInterval(pollServices, POLL_INTERVAL);
 });
 
 client.login(DISCORD_TOKEN);
