@@ -1,0 +1,7 @@
+{
+  "jellyfin": {
+    "name": "Google",
+    "type": "http",
+    "url": "https://Google.com"
+  }
+}
