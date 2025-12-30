@@ -6,22 +6,18 @@ import https from "https";
 import { status } from "minecraft-server-util";
 import { serviceState, downtimeLog, saveStateDebounced } from "./state.js";
 
-/* ================= CONFIG ================= */
-
+// ================= CONFIG =================
 const DATA_DIR = process.env.DATA_DIR || "./data";
 export const SERVICES_FILE = path.join(DATA_DIR, "services.json");
 
-/* ================= SAFETY NET ================= */
-
+// ================= SAFETY NET =================
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function ensureJsonFile(filePath) {
+function safeLoadJson(filePath) {
   try {
-    // If path exists but is a directory → delete it
+    // If path exists but is a directory → remove it
     if (fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) {
       console.error(
         `[SAFETY] ${filePath} is a directory — replacing with file`
@@ -29,16 +25,13 @@ function ensureJsonFile(filePath) {
       fs.rmSync(filePath, { recursive: true, force: true });
     }
 
-    // If file does not exist → create empty JSON
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, "{}", "utf8");
       return {};
     }
 
-    // Read & parse JSON
     const raw = fs.readFileSync(filePath, "utf8").trim();
     if (!raw) return {};
-
     return JSON.parse(raw);
   } catch (err) {
     console.error(`[SAFETY] Corrupt JSON in ${filePath}:`, err);
@@ -47,32 +40,24 @@ function ensureJsonFile(filePath) {
   }
 }
 
-/* ================= LOAD SERVICES ================= */
-
+// ================= LOAD SERVICES =================
 ensureDataDir();
-export let SERVICES = ensureJsonFile(SERVICES_FILE);
+export let SERVICES = safeLoadJson(SERVICES_FILE);
 
-/* ================= SAVE SERVICES ================= */
-
+// ================= SAVE SERVICES =================
 export function saveServices() {
   try {
     fs.writeFileSync(SERVICES_FILE, JSON.stringify(SERVICES, null, 2));
   } catch (err) {
-    console.error(`[ERROR] Failed to save services.json`, err);
+    console.error(`[SAVE ERROR] Failed to write ${SERVICES_FILE}:`, err);
   }
 }
 
-/* ================= SERVICE CHECKS ================= */
-
+// ================= SERVICE CHECKS =================
 export async function checkHTTP(url) {
   try {
     const agent = new https.Agent({ rejectUnauthorized: false });
-    const res = await fetch(url, {
-      timeout: 5000,
-      redirect: "manual",
-      agent,
-    });
-
+    const res = await fetch(url, { timeout: 5000, redirect: "manual", agent });
     const online = res.status >= 200 && res.status < 400;
     console.log(
       `[CHECK] HTTP ${url} → ${online ? "ONLINE" : "OFFLINE"} (${res.status})`
@@ -99,7 +84,6 @@ export function checkTCP(host, port) {
       socket.destroy();
       resolve(false);
     });
-
     socket.on("timeout", () => {
       socket.destroy();
       resolve(false);
@@ -118,8 +102,7 @@ export async function checkMinecraft(host, port) {
   }
 }
 
-/* ================= FAILURE BACKOFF ================= */
-
+// ================= FAILURE BACKOFF =================
 const failureCounts = {};
 
 export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
@@ -139,13 +122,11 @@ export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
     since: now,
     maintenance: false,
   };
-
   const changed = state.online !== online;
 
   if (changed) {
-    if (!online) {
-      downtimeLog.push({ service: key, start: now, end: null });
-    } else {
+    if (!online) downtimeLog.push({ service: key, start: now, end: null });
+    else {
       const last = [...downtimeLog]
         .reverse()
         .find((e) => e.service === key && e.end === null);

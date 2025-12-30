@@ -129,6 +129,7 @@ export async function handleInteraction(
         const name = interaction.options.getString("name", true);
         const type = interaction.options.getString("type", true); // "http" or "minecraft"
         const urlOrHost = interaction.options.getString("url_or_host", true);
+        const portInput = interaction.options.getInteger("port");
 
         if (SERVICES[name]) {
           return interaction.editReply({
@@ -141,7 +142,7 @@ export async function handleInteraction(
         if (type === "http") newService.url = urlOrHost;
         else if (type === "minecraft") {
           newService.host = urlOrHost;
-          newService.port = 25566;
+          newService.port = portInput ?? 25565;
         } else
           return interaction.editReply({
             content: "Invalid type. Use 'http' or 'minecraft'.",
