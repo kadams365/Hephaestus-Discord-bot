@@ -9,5 +9,7 @@ services:
       ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
       DATA_DIR: ${DATA_DIR}
     volumes:
-      - hephaestus-data:${DATA_DIR}
+      - ./services.json:/usr/src/app/services.json
+      - ./uptime.json:/usr/src/app/uptime.json
+      - ./downtime.json:/usr/src/app/downtime.json
     restart: unless-stopped

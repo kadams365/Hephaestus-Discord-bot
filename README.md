@@ -26,7 +26,7 @@ A Discord bot for monitoring services such as HTTP servers, Minecraft servers, a
 
 ---
 
-## Installation
+## Installation (Choose 1)
 
 1. Clone the repository:
 
@@ -70,7 +70,7 @@ Docker Compose Example
 ```bash
 services:
   hephaestus-bot:
-    build: .
+    image: ghcr.io/kadams365/hephaestus:latest
     container_name: hephaestus-bot
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
@@ -79,8 +79,9 @@ services:
       ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
       DATA_DIR: ${DATA_DIR}
     volumes:
-      - ./services.json:/app/services.json
-      - ./uptime.json:/app/uptime.json
+      - ./services.json:/usr/src/app/services.json
+      - ./uptime.json:/usr/src/app/uptime.json
+      - ./downtime.json:/usr/src/app/downtime.json
     restart: unless-stopped
 ```
 

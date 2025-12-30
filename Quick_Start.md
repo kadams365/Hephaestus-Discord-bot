@@ -6,10 +6,10 @@ A Discord bot to monitor HTTP, TCP, and Minecraft servers with uptime tracking a
 
 ## Quick Start
 
-### 1. Clone & Install
+### 1. Clone & Install (Optional)
 
 ```bash
-git clone https://github.com/yourusername/Hephaestus-Discord-bot.git
+git clone https://github.com/kadams365/Hephaestus-Discord-bot.git
 cd Hephaestus-Discord-bot
 npm install
 ```
@@ -22,6 +22,8 @@ Create a `.env` file with your bot credentials:
 DISCORD_TOKEN=your_bot_token
 CLIENT_ID=your_application_client_id
 GUILD_ID=your_guild_id
+ALERT_CHANNEL_ID=alert_channel_id
+DATA_DIR=/usr/src/app/data
 ```
 
 ### 3. Services
@@ -33,7 +35,7 @@ Default services are in `services.json`. Example:
   "jellyfin": {
     "name": "Jellyfin",
     "type": "http",
-    "url": "https://jellyfin.example.com"
+    "url": "https://jellyfin.com"
   },
   "minecraft": {
     "name": "Minecraft (Foreverworld)",
@@ -93,7 +95,7 @@ docker run -d \
 ```yaml
 services:
   hephaestus-bot:
-    build: .
+    image: ghcr.io/kadams365/hephaestus:latest
     container_name: hephaestus-bot
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
@@ -102,8 +104,9 @@ services:
       ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
       DATA_DIR: ${DATA_DIR}
     volumes:
-      - ./services.json:/app/services.json
-      - ./uptime.json:/app/uptime.json
+      - ./services.json:/usr/src/app/services.json
+      - ./uptime.json:/usr/src/app/uptime.json
+      - ./downtime.json:/usr/src/app/downtime.json
     restart: unless-stopped
 ```
 
