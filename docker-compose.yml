@@ -7,7 +7,7 @@ services:
       CLIENT_ID: ${CLIENT_ID}
       GUILD_ID: ${GUILD_ID}
       ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
-      DATA_DIR: /usr/src/app/data
+      DATA_DIR: ${DATA_DIR:-/usr/src/app/data}
     volumes:
       - ./services.json:/usr/src/app/services.json
       - ./uptime.json:/usr/src/app/uptime.json
