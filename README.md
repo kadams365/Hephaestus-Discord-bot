@@ -29,7 +29,7 @@ A Discord bot for monitoring services such as HTTP servers, Minecraft servers, a
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/Hephaestus-Discord-bot.git
+git clone https://github.com/kadams365/Hephaestus-Discord-bot.git
 cd Hephaestus-Discord-bot
 ```
 
@@ -45,6 +45,44 @@ npm install
 DISCORD_TOKEN=your_bot_token
 CLIENT_ID=your_application_client_id
 GUILD_ID=your_guild_id
+```
+
+4. Build & Run
+
+```bash
+docker build -t hephaestus-bot .
+docker run -d \
+  --name hephaestus-bot \
+  -e DISCORD_TOKEN=your_bot_token \
+  -e CLIENT_ID=your_client_id \
+  -e GUILD_ID=your_guild_id \
+  -v $(pwd)/services.json:/app/services.json \
+  -v $(pwd)/uptime.json:/app/uptime.json \
+  hephaestus-bot
+```
+
+Docker Compose Example
+
+```bash
+services:
+  hephaestus-bot:
+    build: .
+    container_name: hephaestus-bot
+    environment:
+      DISCORD_TOKEN: your_bot_token
+      CLIENT_ID: your_client_id
+      GUILD_ID: your_guild_id
+    volumes:
+      - ./services.json:/app/services.json
+      - ./uptime.json:/app/uptime.json
+    restart: unless-stopped
+```
+
+Run with:
+
+
+```bash
+docker-compose up -d
 ```
 
 ---
@@ -83,3 +121,17 @@ All monitored services are stored in `services.json`:
   }
 }
 
+```
+
+---
+
+## Troubleshooting & Tips
+
+
+Duplicate slash commands: Clear old commands using rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] }) before registering new ones.
+
+Minecraft check errors: Ensure host is a string and port is a number.
+
+Services not saving: Make sure services.json is writable by the bot.
+
+Self-signed HTTPS: HTTP checks accept self-signed certificates for LAN servers.
