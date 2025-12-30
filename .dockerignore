@@ -1,3 +1,8 @@
-node_modules;
-npm - debug.log.env.local;
-logs;
+node_modules
+.dockerignore
+.git
+.gitignore
+.env
+uptime.json
+downtime.json
+services.json   # optionally if you don't want default services included in image
