@@ -1,0 +1,23 @@
+{
+  "jellyfin": {
+    "name": "Jellyfin",
+    "type": "http",
+    "url": "https://jellyfin.routernet.org"
+  },
+  "minecraft": {
+    "name": "Minecraft (Foreverworld)",
+    "type": "minecraft",
+    "host": "forever.routernet.org",
+    "port": 25566
+  },
+  "truenas": {
+    "name": "TrueNAS",
+    "type": "http",
+    "url": "https://truenas.routernet.lan"
+  },
+  "Game Server Panel": {
+    "name": "Game Server Panel",
+    "type": "http",
+    "url": "https://panel.routernet.org/"
+  }
+}

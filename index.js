@@ -61,10 +61,45 @@ const commands = [
       o.setName("enabled").setDescription("Enable/disable").setRequired(true)
     ),
   new SlashCommandBuilder().setName("ping").setDescription("Check bot latency"),
+  new SlashCommandBuilder()
+    .setName("help")
+    .setDescription("Show all bot commands"),
+  new SlashCommandBuilder().setName("info").setDescription("Show bot info"),
+  new SlashCommandBuilder()
+    .setName("addservice")
+    .setDescription("Add a new service to monitoring")
+    .addStringOption((o) =>
+      o.setName("name").setDescription("Service name").setRequired(true)
+    )
+    .addStringOption((o) =>
+      o
+        .setName("type")
+        .setDescription("Service type: http/minecraft/tcp")
+        .setRequired(true)
+    )
+    .addStringOption((o) =>
+      o.setName("url_or_host").setDescription("URL or host").setRequired(true)
+    )
+    .addIntegerOption((o) =>
+      o
+        .setName("port")
+        .setDescription("Port for TCP or Minecraft")
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName("removeservice")
+    .setDescription("Remove a service from monitoring")
+    .addStringOption((o) =>
+      o.setName("name").setDescription("Service name").setRequired(true)
+    ),
 ].map((c) => c.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
 (async () => {
+  console.log("Clearing old slash commands...");
+  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+    body: [],
+  });
   console.log("Registering slash commands...");
   await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
     body: commands,

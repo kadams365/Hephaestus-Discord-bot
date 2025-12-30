@@ -1,10 +1,8 @@
-// state.js
 import fs from "fs";
 
 export const STATE_FILE = "./uptime.json";
 export const DOWNTIME_FILE = "./downtime.json";
 
-// Safe JSON parsing function
 function safeParse(filePath, defaultValue) {
   try {
     if (!fs.existsSync(filePath)) return defaultValue;
@@ -16,7 +14,6 @@ function safeParse(filePath, defaultValue) {
   }
 }
 
-// Initialize state with safe parsing
 export let serviceState = safeParse(STATE_FILE, {});
 export let downtimeLog = safeParse(DOWNTIME_FILE, []);
 

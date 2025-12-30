@@ -1,30 +1,40 @@
-// services.js
+import fs from "fs";
 import fetch from "node-fetch";
 import net from "net";
 import https from "https";
 import { status } from "minecraft-server-util";
 import { serviceState, downtimeLog, saveStateDebounced } from "./state.js";
 
-export const SERVICES = {
-  jellyfin: {
-    name: "Jellyfin",
-    type: "http",
-    url: "https://jellyfin.routernet.org",
-  },
-  minecraft: {
-    name: "Minecraft (Foreverworld)",
-    type: "minecraft",
-    host: "forever.routernet.org",
-    port: 25566,
-  },
-  truenas: {
-    name: "TrueNAS",
-    type: "http",
-    url: "https://truenas.routernet.lan",
-  },
-};
+export const SERVICES_FILE = "./services.json";
 
-// HTTP check (handles LAN self-signed certs)
+// Load services from JSON file
+export let SERVICES = fs.existsSync(SERVICES_FILE)
+  ? JSON.parse(fs.readFileSync(SERVICES_FILE, "utf8"))
+  : {
+      jellyfin: {
+        name: "Jellyfin",
+        type: "http",
+        url: "https://jellyfin.routernet.org",
+      },
+      minecraft: {
+        name: "Minecraft (Foreverworld)",
+        type: "minecraft",
+        host: "forever.routernet.org",
+        port: 25566,
+      },
+      truenas: {
+        name: "TrueNAS",
+        type: "http",
+        url: "https://truenas.routernet.lan",
+      },
+    };
+
+// Save services JSON
+export function saveServices() {
+  fs.writeFileSync(SERVICES_FILE, JSON.stringify(SERVICES, null, 2));
+}
+
+// ================= SERVICE CHECKS =================
 export async function checkHTTP(url) {
   try {
     const agent = new https.Agent({ rejectUnauthorized: false });
@@ -42,7 +52,6 @@ export async function checkHTTP(url) {
   }
 }
 
-// TCP check
 export function checkTCP(host, port) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
@@ -66,12 +75,12 @@ export function checkTCP(host, port) {
 
 export async function checkMinecraft(host, port) {
   try {
-    // Ensure proper types
+    // Ensure host is a string and port is a number
     host = String(host);
     port = Number(port);
 
-    // Check server online, ignore result
-    await status(host, port, { timeout: 5000 });
+    // Correct call: pass host and port separately, not as an object
+    const result = await status(host, port, { timeout: 5000 });
 
     console.log(`[CHECK] Minecraft ${host}:${port} → ONLINE`);
     return true;
@@ -81,8 +90,9 @@ export async function checkMinecraft(host, port) {
   }
 }
 
-// Service polling with backoff
+// ================= FAILURE BACKOFF =================
 const failureCounts = {};
+
 export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
   const svc = SERVICES[key];
   const now = Date.now();
@@ -118,7 +128,7 @@ export async function checkService(key, POLL_INTERVAL, MAX_BACKOFF) {
   if (!online) {
     failureCounts[key] = (failureCounts[key] ?? 0) + 1;
     const nextPoll = Math.min(
-      POLL_INTERVAL * 2 ** (failureCounts[key] - 1),
+      POLL_INTERVAL * Math.pow(2, failureCounts[key] - 1),
       MAX_BACKOFF
     );
     setTimeout(() => checkService(key, POLL_INTERVAL, MAX_BACKOFF), nextPoll);
