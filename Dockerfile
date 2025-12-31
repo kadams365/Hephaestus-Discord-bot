@@ -8,8 +8,8 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install --production
 
-# Copy bot source code
-COPY . .
+# Copy only source code
+COPY src/ ./src
 
 # Set environment variable for data folder
 ENV DATA_DIR=/usr/src/app/data
@@ -17,5 +17,5 @@ ENV DATA_DIR=/usr/src/app/data
 # Create data directory
 RUN mkdir -p $DATA_DIR
 
-# Run the bot
-CMD ["node", "index.js"]
+# Run the bot from src/
+CMD ["node", "src/index.js"]

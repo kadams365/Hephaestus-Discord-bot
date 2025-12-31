@@ -1,6 +1,6 @@
 services:
   hephaestus-bot:
-    image: ghcr.io/kadams365/hephaestus:latest
+    build: .
     container_name: hephaestus-bot
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
@@ -9,5 +9,5 @@ services:
       ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
       DATA_DIR: ${DATA_DIR}
     volumes:
-      - ./data:/usr/src/app/data
+      - ./data:${DATA_DIR}
     restart: unless-stopped
