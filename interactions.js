@@ -22,22 +22,56 @@ export async function handleInteraction(
     switch (interaction.commandName) {
       // ================= STATUS =================
       case "status": {
-        const embed = new EmbedBuilder().setTitle("Service Status");
-        for (const key of Object.keys(SERVICES)) {
-          const s = serviceState[key];
-          embed.addFields({
-            name: SERVICES[key].name,
-            value: s.maintenance
-              ? "Maintenance"
-              : s.online
-              ? `Online\nUptime 24h: ${calculateRollingUptime(
-                  key,
-                  24 * 60 * 60 * 1000
-                )}%`
-              : "Offline",
-          });
+        try {
+          const embed = new EmbedBuilder().setTitle("Service Status");
+
+          for (const key of Object.keys(SERVICES)) {
+            const svc = SERVICES[key];
+            const state = serviceState[key] ?? {
+              online: false,
+              since: Date.now(),
+            };
+
+            const online = state.online;
+
+            const sinceMs = Date.now() - (state.since ?? Date.now());
+            const sinceH = Math.floor(sinceMs / 1000 / 60 / 60);
+            const sinceM = Math.floor((sinceMs / 1000 / 60) % 60);
+            const sinceStr = `${sinceH}h ${sinceM}m`;
+
+            const uptime24h = calculateRollingUptime(key, 24 * 60 * 60 * 1000);
+            const hostInfo = svc.url ?? svc.host ?? "N/A";
+
+            embed.addFields({
+              name: svc.name ?? key,
+              value: `${hostInfo}\nStatus: ${
+                online ? "Online" : "Offline"
+              } | Since: ${sinceStr}\nUptime 24h: ${uptime24h}%`,
+            });
+          }
+
+          if (interaction.deferred || interaction.replied) {
+            await interaction.editReply({ embeds: [embed] });
+          } else {
+            await interaction.reply({ embeds: [embed] });
+          }
+        } catch (err) {
+          console.error("Error in /status command:", err);
+          try {
+            if (interaction.deferred || interaction.replied) {
+              await interaction.editReply({
+                content: "Failed to fetch service status.",
+                ephemeral: true,
+              });
+            } else {
+              await interaction.reply({
+                content: "Failed to fetch service status.",
+                ephemeral: true,
+              });
+            }
+          } catch {}
         }
-        return interaction.editReply({ embeds: [embed] });
+        break;
       }
 
       // ================= UPTIME =================

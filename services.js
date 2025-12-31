@@ -11,16 +11,18 @@ import { notifyServiceChange } from "./notify.js";
 import { POLL_INTERVAL, MAX_BACKOFF } from "./config.js";
 
 /* ================= CONFIG ================= */
-
 const DATA_DIR = process.env.DATA_DIR || "./data";
 export const SERVICES_FILE = path.join(DATA_DIR, "services.json");
 
-/* ================= SAFETY NET ================= */
+// Flap protection
+const failureStreak = {};
+const successStreak = {};
+const FAIL_THRESHOLD = 3; // Consecutive failures before offline alert
+const RECOVER_THRESHOLD = 2; // Consecutive successes before online alert
 
+/* ================= SAFETY NET ================= */
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 function safeLoadJson(filePath) {
@@ -47,7 +49,6 @@ function safeLoadJson(filePath) {
 }
 
 /* ================= LOAD / SAVE SERVICES ================= */
-
 ensureDataDir();
 export let SERVICES = safeLoadJson(SERVICES_FILE);
 
@@ -60,15 +61,10 @@ export function saveServices() {
 }
 
 /* ================= SERVICE CHECKS ================= */
-
 export async function checkHTTP(url) {
   try {
     const agent = new https.Agent({ rejectUnauthorized: false });
-    const res = await fetch(url, {
-      timeout: 5000,
-      redirect: "manual",
-      agent,
-    });
+    const res = await fetch(url, { timeout: 5000, redirect: "manual", agent });
     return res.status >= 200 && res.status < 400;
   } catch {
     return false;
@@ -107,11 +103,9 @@ export async function checkMinecraft(host, port) {
 }
 
 /* ================= FAILURE BACKOFF ================= */
-
 const failureCounts = {};
 
 /* ================= CORE MONITOR ================= */
-
 export async function checkService(key) {
   const svc = SERVICES[key];
   if (!svc) return;
@@ -120,13 +114,10 @@ export async function checkService(key) {
   let online = false;
 
   try {
-    if (svc.type === "http") {
-      online = await checkHTTP(svc.url);
-    } else if (svc.type === "tcp") {
-      online = await checkTCP(svc.host, svc.port);
-    } else if (svc.type === "minecraft") {
+    if (svc.type === "http") online = await checkHTTP(svc.url);
+    else if (svc.type === "tcp") online = await checkTCP(svc.host, svc.port);
+    else if (svc.type === "minecraft")
       online = await checkMinecraft(svc.host, svc.port);
-    }
   } catch (err) {
     console.error(`Check error for ${key}:`, err.message);
     online = false;
@@ -138,54 +129,64 @@ export async function checkService(key) {
     maintenance: false,
   };
 
-  const changed = state.online !== online;
-
-  // MAINTENANCE MODE
+  // 🛠️ MAINTENANCE MODE
   if (state.maintenance) {
-    state.online = online;
+    state.online = online; // track silently
     serviceState[key] = state;
     return;
   }
 
-  // STATUS CHANGE
-  if (changed) {
-    state.since = now;
+  // ================= FLAP-PROTECTED ALERTS =================
+  const prevOnline = state.online;
 
-    await notifyServiceChange(svc.name ?? key, online);
+  if (online) {
+    successStreak[key] = (successStreak[key] ?? 0) + 1;
+    failureStreak[key] = 0;
 
-    if (!online) {
-      downtimeLog.push({
-        service: key,
-        start: now,
-        end: null,
-      });
-    } else {
+    if (!prevOnline && successStreak[key] >= RECOVER_THRESHOLD) {
+      state.online = true;
+      state.since = now;
+      await notifyServiceChange(svc.name ?? key, true);
+
+      // Close downtime
       const last = [...downtimeLog]
         .reverse()
         .find((e) => e.service === key && e.end === null);
       if (last) last.end = now;
-    }
 
-    saveStateDebounced();
+      saveStateDebounced();
+      successStreak[key] = 0;
+    }
+  } else {
+    failureStreak[key] = (failureStreak[key] ?? 0) + 1;
+    successStreak[key] = 0;
+
+    if (prevOnline && failureStreak[key] >= FAIL_THRESHOLD) {
+      state.online = false;
+      state.since = now;
+      await notifyServiceChange(svc.name ?? key, false);
+
+      downtimeLog.push({ service: key, start: now, end: null });
+      saveStateDebounced();
+      failureStreak[key] = 0;
+    }
   }
 
-  // UPDATE STATE
+  // 📌 UPDATE STATE
   state.online = online;
   serviceState[key] = state;
 
-  // EXPONENTIAL BACKOFF
+  // ⏱️ EXPONENTIAL BACKOFF
   if (!online) {
     failureCounts[key] = (failureCounts[key] ?? 0) + 1;
-
     const nextPoll = Math.min(
       POLL_INTERVAL * 2 ** (failureCounts[key] - 1),
       MAX_BACKOFF
     );
-
     setTimeout(() => checkService(key), nextPoll);
   } else {
     failureCounts[key] = 0;
   }
 
-  return { ...state, changed };
+  return { ...state, online };
 }
