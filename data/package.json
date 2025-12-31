@@ -1,5 +1,10 @@
 {
   "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
   "dependencies": {
     "discord.js": "^14.25.1",
     "mcstatus": "^1.0.1",

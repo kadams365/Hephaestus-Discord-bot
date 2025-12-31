@@ -11,8 +11,10 @@ import { notifyServiceChange } from "./notify.js";
 import { POLL_INTERVAL, MAX_BACKOFF } from "./config.js";
 
 /* ================= CONFIG ================= */
-const DATA_DIR = process.env.DATA_DIR || "./data";
+const DATA_DIR = path.resolve(process.cwd(), "data");
 export const SERVICES_FILE = path.join(DATA_DIR, "services.json");
+export const DOWNTIME_FILE = path.join(DATA_DIR, "downtime.json");
+export const UPTIME_FILE = path.join(DATA_DIR, "uptime.json");
 
 // Flap protection
 const failureStreak = {};
@@ -129,9 +131,9 @@ export async function checkService(key) {
     maintenance: false,
   };
 
-  // 🛠️ MAINTENANCE MODE
+  // MAINTENANCE MODE
   if (state.maintenance) {
-    state.online = online; // track silently
+    state.online = online;
     serviceState[key] = state;
     return;
   }
@@ -172,11 +174,11 @@ export async function checkService(key) {
     }
   }
 
-  // 📌 UPDATE STATE
+  // UPDATE STATE
   state.online = online;
   serviceState[key] = state;
 
-  // ⏱️ EXPONENTIAL BACKOFF
+  // EXPONENTIAL BACKOFF
   if (!online) {
     failureCounts[key] = (failureCounts[key] ?? 0) + 1;
     const nextPoll = Math.min(

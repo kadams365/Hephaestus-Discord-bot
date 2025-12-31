@@ -9,7 +9,5 @@ services:
       ALERT_CHANNEL_ID: ${ALERT_CHANNEL_ID}
       DATA_DIR: ${DATA_DIR}
     volumes:
-      - ./services.json:/usr/src/app/services.json
-      - ./uptime.json:/usr/src/app/uptime.json
-      - ./downtime.json:/usr/src/app/downtime.json
+      - ./data:/usr/src/app/data
     restart: unless-stopped
