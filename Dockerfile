@@ -17,8 +17,5 @@ ENV DATA_DIR=/usr/src/app/data
 # Create data directory
 RUN mkdir -p $DATA_DIR
 
-# Create empty JSON files if missing
-RUN touch ./services.json ./uptime.json ./downtime.json
-
 # Run the bot
 CMD ["node", "index.js"]
