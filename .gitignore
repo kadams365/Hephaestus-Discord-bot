@@ -3,4 +3,3 @@ node_modules
 uptime.json
 downtime.json
 services.json
-.DS_Store       # macOS artifacts, if relevant
