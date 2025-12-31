@@ -10,6 +10,7 @@ import {
 import { SERVICES, checkService } from "./services.js";
 import { handleInteraction } from "./interactions.js";
 import { serviceState, monitorStartTime } from "./state.js";
+import { initNotifier } from "./notify.js";
 
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
 const POLL_INTERVAL = 60_000;
@@ -120,15 +121,23 @@ async function pollServices() {
 
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
+  // Initialize alert system
+  initNotifier(client, process.env.ALERT_CHANNEL_ID);
+
+  // Initialize state + start checks
   for (const key of Object.keys(SERVICES)) {
-    if (!serviceState[key])
+    if (!serviceState[key]) {
       serviceState[key] = {
         online: false,
         since: Date.now(),
         maintenance: false,
       };
+    }
+
     await checkService(key, POLL_INTERVAL, MAX_BACKOFF);
   }
+
   setInterval(pollServices, POLL_INTERVAL);
 });
 
